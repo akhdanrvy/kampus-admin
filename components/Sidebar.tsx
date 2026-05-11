@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Users,
   QrCode,
+  LogOut,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -17,7 +18,12 @@ const NAV_ITEMS = [
   { href: "/kehadiran", label: "Kehadiran / QR", icon: QrCode },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  onLogout?: () => Promise<void>
+  isLoggingOut?: boolean
+}
+
+export default function Sidebar({ onLogout, isLoggingOut = false }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -50,10 +56,26 @@ export default function Sidebar() {
         })}
       </nav>
 
+      {/* Logout Button */}
+      {onLogout && (
+        <div className="px-6 py-4 border-t border-white/10">
+          <button
+            onClick={onLogout}
+            disabled={isLoggingOut}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <LogOut size={18} />
+            {isLoggingOut ? "Sedang logout..." : "Logout"}
+          </button>
+        </div>
+      )}
+
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-white/10">
-        <span className="text-white/40 text-xs">v1.0.0</span>
-      </div>
+      {!onLogout && (
+        <div className="px-6 py-4 border-t border-white/10">
+          <span className="text-white/40 text-xs">v1.0.0</span>
+        </div>
+      )}
     </aside>
   );
 }
