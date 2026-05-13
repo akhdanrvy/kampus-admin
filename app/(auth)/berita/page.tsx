@@ -16,7 +16,6 @@ interface NewsForm {
   excerpt: string;
   content: string;
   thumbnail_url: string;
-  author_name: string;
   is_featured: boolean;
   is_published: boolean;
 }
@@ -27,7 +26,6 @@ const EMPTY_FORM: NewsForm = {
   excerpt: "",
   content: "",
   thumbnail_url: "",
-  author_name: "",
   is_featured: false,
   is_published: false,
 };
@@ -86,7 +84,6 @@ export default function BeritaPage() {
       excerpt: article.excerpt ?? "",
       content: article.content,
       thumbnail_url: article.thumbnail_url ?? "",
-      author_name: article.author_name ?? "",
       is_featured: article.is_featured,
       is_published: article.is_published,
     });
@@ -109,25 +106,41 @@ export default function BeritaPage() {
     setSaving(true);
     setError(null);
 
-    const payload = {
-      ...form,
-      slug: slugify(form.title),
-      published_at: new Date().toISOString(),
-    };
+    try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
 
-    if (editingId) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: e } = await (supabase.from("news") as any).update(payload).eq("id", editingId);
-      if (e) { setError(e.message); setSaving(false); return; }
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: e } = await (supabase.from("news") as any).insert(payload);
-      if (e) { setError(e.message); setSaving(false); return; }
+      if (!userId && !editingId) {
+        setError("Harus login untuk membuat artikel baru.");
+        setSaving(false);
+        return;
+      }
+
+      const payload = {
+        ...form,
+        slug: slugify(form.title),
+        published_at: new Date().toISOString(),
+        ...(userId && !editingId && { author_id: userId }), // Only set author_id for new articles
+      };
+
+      if (editingId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: e } = await (supabase.from("news") as any).update(payload).eq("id", editingId);
+        if (e) { setError(e.message); setSaving(false); return; }
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: e } = await (supabase.from("news") as any).insert(payload);
+        if (e) { setError(e.message); setSaving(false); return; }
+      }
+
+      setSaving(false);
+      setShowDialog(false);
+      fetchArticles();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
+      setSaving(false);
     }
-
-    setSaving(false);
-    setShowDialog(false);
-    fetchArticles();
   };
 
   return (
@@ -252,27 +265,17 @@ export default function BeritaPage() {
                 />
               </Field>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Kategori">
-                  <select
-                    value={form.category}
-                    onChange={(e) => setForm({ ...form, category: e.target.value as NewsCategory })}
-                    className={INPUT_CLASS}
-                  >
-                    {CATEGORY_OPTIONS.map((c) => (
-                      <option key={c} value={c} className="capitalize">{c}</option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Penulis">
-                  <input
-                    value={form.author_name}
-                    onChange={(e) => setForm({ ...form, author_name: e.target.value })}
-                    className={INPUT_CLASS}
-                    placeholder="Nama penulis"
-                  />
-                </Field>
-              </div>
+              <Field label="Kategori">
+                <select
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value as NewsCategory })}
+                  className={INPUT_CLASS}
+                >
+                  {CATEGORY_OPTIONS.map((c) => (
+                    <option key={c} value={c} className="capitalize">{c}</option>
+                  ))}
+                </select>
+              </Field>
 
               <Field label="Thumbnail URL">
                 <input

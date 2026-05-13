@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { supabase } from "@/lib/supabase";
 import { formatDate } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
-import { Search } from "lucide-react";
+import { Search, Plus } from "lucide-react";
+import TambahMahasiswaModal from "@/components/TambahMahasiswaModal";
 
 type FilterStatus = "semua" | "active" | "inactive" | "graduated";
 
@@ -26,15 +26,13 @@ export default function MahasiswaPage() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("semua");
   const [search, setSearch] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchProfiles = async () => {
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase.from("profiles") as any)
-      .select("*")
-      .order("created_at", { ascending: false });
-    const list = (data as Profile[]) ?? [];
-    setProfiles(list);
+    const res = await fetch('/api/mahasiswa/list');
+    const json = await res.json();
+    setProfiles((json.data as Profile[]) ?? []);
     setLoading(false);
   };
 
@@ -65,10 +63,11 @@ export default function MahasiswaPage() {
   }, [profiles, filterStatus, search]);
 
   const updateStatus = async (id: string, status: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from("profiles") as any)
-      .update({ student_status: status })
-      .eq("id", id);
+    await fetch('/api/mahasiswa', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, student_status: status }),
+    });
     fetchProfiles();
   };
 
@@ -79,11 +78,25 @@ export default function MahasiswaPage() {
     { label: "Lulus", value: "graduated" },
   ];
 
+  const handleMahasiswaAdded = () => {
+    setIsModalOpen(false);
+    fetchProfiles();
+  };
+
   return (
     <div className="p-8">
-      <div>
-        <h1 className="text-2xl font-bold text-[#0f172a]">Data Mahasiswa</h1>
-        <p className="text-[#64748b] text-sm mt-0.5">{profiles.length} pengguna terdaftar</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[#0f172a]">Data Mahasiswa</h1>
+          <p className="text-[#64748b] text-sm mt-0.5">{profiles.length} mahasiswa terdaftar</p>
+        </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#1e3a5f] rounded-lg hover:bg-[#16304f] transition-colors"
+        >
+          <Plus size={16} />
+          Tambah Mahasiswa
+        </button>
       </div>
 
       {/* Controls */}
@@ -215,6 +228,12 @@ export default function MahasiswaPage() {
           </tbody>
         </table>
       </div>
+
+      <TambahMahasiswaModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handleMahasiswaAdded}
+      />
     </div>
   );
 }
