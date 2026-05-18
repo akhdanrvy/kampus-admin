@@ -71,7 +71,7 @@ export default function TambahMahasiswaModal({ isOpen, onClose, onSuccess }: Pro
           phone: form.phone || undefined,
           faculty: form.faculty || undefined,
           major: form.major,
-          year_entry: form.year_entry,
+          year_entry: form.year_entry ? Number(form.year_entry) : undefined,
           student_status: form.student_status,
           role: 'student',
         }),
@@ -117,7 +117,7 @@ export default function TambahMahasiswaModal({ isOpen, onClose, onSuccess }: Pro
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="px-6 py-5 max-h-[70vh] overflow-y-auto">
+        <form id="tambah-mahasiswa-form" onSubmit={handleSubmit} className="px-6 py-5 max-h-[70vh] overflow-y-auto">
           {error && (
             <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
               {error}
@@ -294,7 +294,6 @@ export default function TambahMahasiswaModal({ isOpen, onClose, onSuccess }: Pro
             type="submit"
             form="tambah-mahasiswa-form"
             disabled={loading}
-            onClick={handleSubmit}
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#1e3a5f] rounded-lg hover:bg-[#16304f] transition-colors disabled:opacity-60"
           >
             {loading && <Loader2 size={14} className="animate-spin" />}

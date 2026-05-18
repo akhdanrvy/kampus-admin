@@ -41,9 +41,11 @@ export async function POST(request: Request) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profileData, error: profileError } = await (supabaseAdmin.from('profiles') as any)
-      .update({
+      .upsert({
+        id: userId,
         full_name,
         nim,
+        email,
         phone: phone ?? null,
         faculty: faculty ?? null,
         major,
@@ -51,8 +53,7 @@ export async function POST(request: Request) {
         student_status,
         role,
         updated_at: new Date().toISOString(),
-      })
-      .eq('id', userId)
+      }, { onConflict: 'id' })
       .select()
       .single()
 
