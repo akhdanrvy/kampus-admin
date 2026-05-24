@@ -230,6 +230,7 @@ export default function MahasiswaPage() {
       </div>
 
       <TambahMahasiswaModal
+        key={isModalOpen ? "open" : "closed"}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleMahasiswaAdded}

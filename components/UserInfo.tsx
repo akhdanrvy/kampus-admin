@@ -15,11 +15,13 @@ export default function UserInfo() {
 
       if (!user) return
 
-      const { data: profile } = await (supabase
-        .from('profiles') as any)
+      const { data: profileData } = await supabase
+        .from('profiles')
         .select('full_name')
         .eq('id', user.id)
         .single()
+
+      const profile = profileData as { full_name?: string } | null
 
       if (profile?.full_name) {
         setFullName(profile.full_name)

@@ -24,24 +24,60 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session if needed
-  await supabase.auth.getSession()
-
-  // Public routes yang tidak perlu auth
   const publicRoutes = ['/login']
   const pathname = request.nextUrl.pathname
+  const isPublicRoute = publicRoutes.includes(pathname)
 
-  if (publicRoutes.includes(pathname)) {
+  const copyCookies = (response: NextResponse) => {
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      response.cookies.set(cookie)
+    })
+
+    return response
+  }
+
+  const redirectToLogin = (reason?: string) => {
+    const url = new URL('/login', request.url)
+    if (reason) {
+      url.searchParams.set('error', reason)
+    }
+
+    return copyCookies(NextResponse.redirect(url))
+  }
+
+  const {
+    data: { claims },
+    error: claimsError,
+  } = await supabase.auth.getClaims()
+  const userId = typeof claims?.sub === 'string' ? claims.sub : null
+
+  if (!userId || claimsError) {
+    if (isPublicRoute) {
+      return supabaseResponse
+    }
+
+    return redirectToLogin()
+  }
+
+  const { data: profileData, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .maybeSingle()
+
+  const profile = profileData as { role?: string } | null
+  const isAdmin = !profileError && profile?.role === 'admin'
+
+  if (isPublicRoute) {
+    if (isAdmin) {
+      return copyCookies(NextResponse.redirect(new URL('/', request.url)))
+    }
+
     return supabaseResponse
   }
 
-  // Cek session — jika tidak ada, redirect ke login
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  if (!session && !publicRoutes.includes(pathname)) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  if (!isAdmin) {
+    return redirectToLogin('unauthorized')
   }
 
   return supabaseResponse

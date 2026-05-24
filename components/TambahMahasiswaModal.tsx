@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 
 interface Props {
@@ -26,14 +26,6 @@ export default function TambahMahasiswaModal({ isOpen, onClose, onSuccess }: Pro
   const [form, setForm] = useState(EMPTY_FORM)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-
-  // Reset form when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setForm(EMPTY_FORM)
-      setError('')
-    }
-  }, [isOpen])
 
   if (!isOpen) return null
 
